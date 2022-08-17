@@ -10,23 +10,29 @@ FROM app_store_apps
 SELECT *
 FROM play_store_apps
 
+--
+
+
 SELECT name, rating, CAST(review_count as numeric) as numrev
 FROM app_store_apps
-WHERE numrev > 1000
-ORDER BY rating DESC;
+ORDER BY rating DESC
+WHERE numrev > 1000;
 
---This is the average rating and average price.
-SELECT app.name, AVG(app.rating+play.rating) AS AVG_rating,
-AVG(app.price + replace(play.price, '$', '')::numeric)AS avg_price
-FROM app_store_apps AS app
-INNER JOIN play_store_apps AS play
-ON app.name = play.name
-GROUP BY app.name
-ORDER BY AVG_rating DESC;
+--
 
-SELECT a.name, AVG(a.rating+p.rating) as arating
-FROM app_store_apps as a
-INNER JOIN play_store_apps as p
-ON a.name = p.name
-ORDER BY a.name, arating
-GROUP BY a.name;
+
+SELECT a.name,
+       ROUND(((a.rating + p.rating) / 2) ,2) AS avg_rating,
+       ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) AS avg_price,
+       TO_CHAR(SUM(CAST(a.review_count AS INT)+p.review_count),'FM9,999,999,999')  AS total_review_count
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+    ON a.name = p.name
+GROUP BY a.name, avg_rating, avg_price
+HAVING ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) <= 1 AND SUM(CAST(a.review_count AS INT)+p.review_count) > 2000000
+ORDER BY avg_rating DESC
+LIMIT 10;
+
+
+
+
