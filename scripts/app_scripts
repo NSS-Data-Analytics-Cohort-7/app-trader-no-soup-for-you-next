@@ -1,5 +1,48 @@
 select *
-from app_store_apps
+from play_store_apps
 
 select *
-from play_store_apps
+from app_store_apps
+-- filtering apps that are on both stores with same name
+select *
+from app_store_apps as a
+inner join play_store_apps as p
+on a.name = p.name
+order by a.name 
+
+-- avg app store rating per app
+select round((a.rating+p.rating)/2,2) as avg_rating, a.name
+from app_store_apps as a
+inner join play_store_apps as p
+on a.name = p.name
+group by a.name, a.rating,p.rating
+order by avg_rating desc
+limit 10
+
+-- Top 10 rating with a cost of 1 dollar or less
+select a.name, round((a.rating+p.rating)/2,2) as avg_rating, round(AVG(a.price + replace(p.price, '$', '')::numeric),2) AS avg_price 
+from app_store_apps as a
+inner join play_store_apps as p
+on a.name = p.name
+group by a.name, a.price, p.price, a.rating, p.rating
+having round(AVG(a.price + replace(p.price, '$', '')::numeric),2) <= 1
+order by avg_rating desc
+limit 10
+
+--Top 10 based on rating, price, and review count
+select a.name, 
+round((a.rating+p.rating)/2,2) as avg_rating,
+round(AVG(a.price + replace(p.price, '$', '')::numeric),2) AS avg_price,
+sum(cast(a.review_count as int)+p.review_count) as total_review_count
+from app_store_apps as a
+inner join play_store_apps as p
+on a.name = p.name
+group by a.name, a.rating, p.rating
+having round(AVG(a.price + replace(p.price, '$', '')::numeric),2) <= 1 
+and sum(cast(a.review_count as int)+p.review_count) > 2000000
+order by avg_rating desc
+limit 10
+
+
+
+
