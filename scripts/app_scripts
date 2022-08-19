@@ -1,8 +1,10 @@
-select *
+select category
 from play_store_apps
+group by category
 
-select *
+select primary_genre
 from app_store_apps
+group by primary_genre
 -- filtering apps that are on both stores with same name
 select *
 from app_store_apps as a
@@ -31,18 +33,45 @@ limit 10
 
 --Top 10 based on rating, price, and review count
 select a.name, 
-round((a.rating+p.rating)/2,2) as avg_rating,
-round(AVG(a.price + replace(p.price, '$', '')::numeric),2) AS avg_price,
-sum(cast(a.review_count as int)+p.review_count) as total_review_count
+CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+round(((a.rating+p.rating)/2),2) as avg_rating,
+round(((a.price + replace(p.price, '$', '')::numeric)/2),2) AS avg_price,
+(cast(a.review_count as int)) + round(avg(p.review_count),2) as total_review_count,
+a.primary_genre,
+case when round(((a.rating+p.rating)/2),2) >= 4.75 then 5
+when round(((a.rating+p.rating)/2),2) >= 4.25 then 4.5
+end as avg_rating_rounded
 from app_store_apps as a
 inner join play_store_apps as p
 on a.name = p.name
-group by a.name, a.rating, p.rating
-having round(AVG(a.price + replace(p.price, '$', '')::numeric),2) <= 1 
-and sum(cast(a.review_count as int)+p.review_count) > 2000000
+group by a.name, avg_rating, avg_price, primary_genre, p.content_rating, a.content_rating, a.review_count
+having round(((a.price + replace(p.price, '$', '')::numeric)/2),2) <= 1 
 order by avg_rating desc
-limit 10
 
 
+-- Best Rated Genres based on rating and reviews Play Store - Game, App Store - Games
+-- note play store has 119 different genres had to use category for over-arching genres, App store has 23
+select category,
+round(avg(rating),2) as avg_rating,
+sum(review_count) as total_reviews
+from play_store_apps 
+group by category
+having round(avg(rating),2) >= 4
+order by total_reviews desc
 
+select primary_genre,
+round(avg(rating),2) as avg_rating,
+sum(cast(review_count as int)) as total_reviews
+from app_store_apps 
+group by primary_genre
+having round(avg(rating),2) >= 3.5
+order by total_reviews desc
 
+--Is the correlation between popularity and size of apps
+select 
+name,
+size,
+Max(review_count) as max_reviews
+from play_store_apps
+group by size,name
+order by max_reviews desc
