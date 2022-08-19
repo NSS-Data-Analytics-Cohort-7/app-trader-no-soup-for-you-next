@@ -18,7 +18,7 @@ SELECT a.name,
        ROUND(((a.rating + p.rating) / 2) ,2) AS avg_rating,
        ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) AS avg_price,
        TO_CHAR(SUM(CAST(a.review_count AS INT)+p.review_count),'FM9,999,999,999')  AS total_review_count
-FROM app_store_apps AS a
+FROM app_store_apps AS a  TO_CHAR(,'FM9,999,999,999')
 INNER JOIN play_store_apps AS p
     ON a.name = p.name
 GROUP BY a.name, avg_rating, avg_price
@@ -41,8 +41,44 @@ and sum(cast(a.review_count as int)+p.review_count) > 2000000
 order by avg_rating desc
 limit 10;
 
+-- Group colab - J
+SELECT a.name, p.genres,
+     CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+     ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                avg_price
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name
+GROUP BY a.name, p.genres, p.content_rating, a.content_rating
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
+ORDER BY avg_rating DESC
+LIMIT 15;
+
+-- Group colab v.2 - D
+select a.name,
+CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+case when round(((a.rating+p.rating)/2),2) >= 4.75 then 5
+when round(((a.rating+p.rating)/2),2) >= 4.25 then 4.5
+end as avg_rating_rounded,
+round(((a.rating+p.rating)/2),2) as avg_rating,
+round(((a.price + replace(p.price, '$', '')::numeric)/2),2) AS avg_price,
+(cast(a.review_count as int)) + round(avg(p.review_count),2) as total_review_count,
+a.primary_genre
+from app_store_apps as a
+inner join play_store_apps as p
+on a.name = p.name
+group by a.name, avg_rating, avg_price, primary_genre, p.content_rating, a.content_rating, a.review_count
+having round(((a.price + replace(p.price, '$', '')::numeric)/2),2) <= 1
+order by avg_rating desc
+LIMIT 10;
+
+--
+
 SELECT genres,category
 FROM play_store_apps;
+
+--
 
 SELECT *
 FROM play_store_apps
@@ -50,27 +86,44 @@ WHERE rating>=4.5 AND price='0'
 ORDER BY review_count DESC;
 
 -- a. App Trader will purchase apps for 10,000 times the price of the app. For apps that are priced from free up to $1.00, the purchase price is $10,000.  
+
 -- 0 - 1 = $10,000, 1.01 and up = x
 
 --  "Cost of app"
 --  0-1.00 = $10,000
 --  1.01 and up = price(10000)
 
-SELECT name,price,
+-- Total cost of app to buy for app buyer person - Apple
+SELECT name,price,review_count,rating,
 CASE
     WHEN price<= 1 THEN '10000'
-    WHEN price> 1 THEN (price * 10000)
+    WHEN price> 1 THEN TO_CHAR((price * 10000), 'FM9,999,999,999')
     END AS total_price
 FROM app_store_apps
 ORDER BY total_price DESC;
 
-SELECT name,price,
+-- Total cost of app to buy for app buyer person - Google
+-- Need to fix commas
+SELECT 
+name,
+price,
+install_count,
+rating,
 CASE
-    WHEN CAST(price as INT) <= 1 THEN '10000'
-    WHEN CAST(price as INT) > 1 THEN (CAST(price as INT) * 10000)
+    WHEN CAST(REPLACE(price, '$', '') AS NUMERIC)<=1 THEN 10000
+    WHEN CAST(REPLACE(price, '$', '') AS NUMERIC)>1 THEN TO_CHAR(CAST(REPLACE(price, '$', '') as NUMERIC) * 10000), 'FM9,999,999,999'))
     END AS total_price
 FROM play_store_apps
 ORDER BY total_price DESC;
+
+--TO_CHAR(,'FM9,999,999,999')
+--TO_CHAR(SUM(CAST(a.review_count AS INT)+p.review_count),'FM9,999,999,999')  AS total_review_count
+-- ROUND
+SELECT
+    ROUND(10.817, 1);
+    
+SELECT 
+    ROUND((4.4%1), 0);
 
 --b. Apps earn $5000 per month on average from in-app advertising and in-app purchases _regardless_ of the price of the app.
 
@@ -99,5 +152,23 @@ ORDER BY total_price DESC;
 -- 4.5 - 10 years
 -- 5 - 11 years
 
+SELECT 
+
 -- e. App Trader would prefer to work with apps that are available in both the App Store and the Play Store since they can market both for the same $1000 per month.
+-- Group colab
+SELECT a.name, p.genres,
+     CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+     ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                avg_price
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name
+GROUP BY a.name, p.genres, p.content_rating, a.content_rating
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
+ORDER BY avg_rating DESC
+LIMIT 15;
+
+-- DELETE
+
 
