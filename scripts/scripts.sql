@@ -4,22 +4,15 @@
 -- play_store_apps
 -- "name"	"category"	"rating"	"review_count"	"size"	"install_count"	"type"	"price"	"content_rating"	"genres"
 
+-- a. App Trader will purchase apps for 10,000 times the price of the app. For apps that are priced from free up to $1.00, the purchase price is $10,000.  
+
 SELECT *
 FROM app_store_apps
 
 SELECT *
 FROM play_store_apps
 
---
-
-
-SELECT name, rating, CAST(review_count as numeric) as numrev
-FROM app_store_apps
-ORDER BY rating DESC
-WHERE numrev > 1000;
-
---
-
+--  Highest rating with over 2 million reviews
 
 SELECT a.name,
        ROUND(((a.rating + p.rating) / 2) ,2) AS avg_rating,
@@ -31,8 +24,80 @@ INNER JOIN play_store_apps AS p
 GROUP BY a.name, avg_rating, avg_price
 HAVING ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) <= 1 AND SUM(CAST(a.review_count AS INT)+p.review_count) > 2000000
 ORDER BY avg_rating DESC
-LIMIT 10;
+LIMIT 12;
 
+-- D version
 
+select a.name, 
+round((a.rating+p.rating)/2,2) as avg_rating,
+round(AVG(a.price + replace(p.price, '$', '')::numeric),2) AS avg_price,
+sum(cast(a.review_count as int)+p.review_count) as total_review_count
+from app_store_apps as a
+inner join play_store_apps as p
+on a.name = p.name
+group by a.name, a.rating, p.rating
+having round(AVG(a.price + replace(p.price, '$', '')::numeric),2) <= 1 
+and sum(cast(a.review_count as int)+p.review_count) > 2000000
+order by avg_rating desc
+limit 10;
 
+SELECT genres,category
+FROM play_store_apps;
+
+SELECT *
+FROM play_store_apps
+WHERE rating>=4.5 AND price='0'
+ORDER BY review_count DESC;
+
+-- a. App Trader will purchase apps for 10,000 times the price of the app. For apps that are priced from free up to $1.00, the purchase price is $10,000.  
+-- 0 - 1 = $10,000, 1.01 and up = x
+
+--  "Cost of app"
+--  0-1.00 = $10,000
+--  1.01 and up = price(10000)
+
+SELECT name,price,
+CASE
+    WHEN price<= 1 THEN '10000'
+    WHEN price> 1 THEN (price * 10000)
+    END AS total_price
+FROM app_store_apps
+ORDER BY total_price DESC;
+
+SELECT name,price,
+CASE
+    WHEN CAST(price as INT) <= 1 THEN '10000'
+    WHEN CAST(price as INT) > 1 THEN (CAST(price as INT) * 10000)
+    END AS total_price
+FROM play_store_apps
+ORDER BY total_price DESC;
+
+--b. Apps earn $5000 per month on average from in-app advertising and in-app purchases _regardless_ of the price of the app.
+
+-- "Profit of app"
+-- Total est. lifespan * 12(5000)
+
+-- c. App Trader will spend an average of $1000 per month to market an app _regardless_ of the price of the app. If App Trader owns rights to the app in both stores, it can market the app for both stores for a single cost of $1000 per month.  
+
+-- "Total cost of advertising"
+-- Total est. lifespan * 12(1000) IF on one list
+-- Total est. lifespan * 6(1000) IF on both lists
+
+-- d. For every half point that an app gains in rating, its projected lifespan increases by one year, in other words, an app with a rating of 0 can be expected to be in use for 1 year, an app with a rating of 1.0 can be expected to last 3 years, and an app with a rating of 4.0 can be expected to last 9 years. Ratings should be rounded to the nearest 0.5 to evaluate an app's likely longevity.  
+
+-- "Longevity"
+-- Longevity = ((Rating * 2) + 1)
+-- 0 - 1 year
+-- .5 - 2 years
+-- 1 - 3 years
+-- 1.5 - 4 years
+-- 2 - 5 years
+-- 2.5 - 6 years
+-- 3 - 7 years
+-- 3.5 - 8 years
+-- 4 - 9 years
+-- 4.5 - 10 years
+-- 5 - 11 years
+
+-- e. App Trader would prefer to work with apps that are available in both the App Store and the Play Store since they can market both for the same $1000 per month.
 
