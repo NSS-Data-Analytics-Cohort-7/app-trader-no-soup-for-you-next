@@ -69,8 +69,39 @@ FROM play_store_apps
 WHERE rating>=4.5 AND price='0'
 ORDER BY review_count DESC;
 
+--addition way to round
+
+SELECT
+    a.name,
+    ROUND(ROUND(AVG(a.rating + p.rating)) / 2, 1) AS avg_rating,
+    ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) AS avg_price,
+    UPPER(CONCAT(primary_genre, '/', category)) AS app_category
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+    ON a.name = p.name
+GROUP BY a.name, avg_price, app_category
+HAVING ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) <= 1
+ORDER BY avg_rating DESC;
 
 
+--profit
+
+SELECT a.name, a.primary_genre,
+      (ROUND(AVG((a.rating+p.rating))/2,2)*2)+1 AS longevity,
+      (((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*60000 AS total_revenue,
+     CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                   avg_price,
+     CASE WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.75 THEN '5.0'
+     WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.25 THEN '4.5'
+     END AS avg_rating_rounded
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name
+GROUP BY a.name, a.primary_genre, p.content_rating, a.content_rating
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
+ORDER BY avg_rating_rounded DESC
+LIMIT 15;
 
 
 
