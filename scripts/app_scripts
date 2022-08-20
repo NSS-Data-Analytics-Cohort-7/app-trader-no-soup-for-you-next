@@ -31,16 +31,16 @@ having round(AVG(a.price + replace(p.price, '$', '')::numeric),2) <= 1
 order by avg_rating desc
 limit 10
 
---Top 10 based on rating, price, and review count
+--Top 10 based on rating, price, showing genre, and content rating
 select a.name, 
 CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+case when round(((a.rating+p.rating)/2),2) >= 4.75 then 5
+when round(((a.rating+p.rating)/2),2) >= 4.25 then 4.5
+end as avg_rating_rounded,
 round(((a.rating+p.rating)/2),2) as avg_rating,
 round(((a.price + replace(p.price, '$', '')::numeric)/2),2) AS avg_price,
 (cast(a.review_count as int)) + round(avg(p.review_count),2) as total_review_count,
-a.primary_genre,
-case when round(((a.rating+p.rating)/2),2) >= 4.75 then 5
-when round(((a.rating+p.rating)/2),2) >= 4.25 then 4.5
-end as avg_rating_rounded
+a.primary_genre
 from app_store_apps as a
 inner join play_store_apps as p
 on a.name = p.name
@@ -52,21 +52,18 @@ order by avg_rating desc
 -- Best Rated Genres based on rating and reviews Play Store - Game, App Store - Games
 -- note play store has 119 different genres had to use category for over-arching genres, App store has 23
 select category,
-round(avg(rating),2) as avg_rating,
-sum(review_count) as total_reviews
+round(avg(rating),2) as avg_rating
 from play_store_apps 
 group by category
 having round(avg(rating),2) >= 4
-order by total_reviews desc
+order by avg_rating desc
 
 select primary_genre,
 round(avg(rating),2) as avg_rating,
-sum(cast(review_count as int)) as total_reviews
 from app_store_apps 
 group by primary_genre
 having round(avg(rating),2) >= 3.5
-order by total_reviews desc
-
+order by avg_rating desc
 --Is the correlation between popularity and size of apps
 select 
 name,
@@ -75,3 +72,63 @@ Max(review_count) as max_reviews
 from play_store_apps
 group by size,name
 order by max_reviews desc
+
+--from jake or matt beyond here
+SELECT
+    a.name,
+    ROUND(ROUND(AVG(a.rating + p.rating)) / 2, 1) AS avg_rating,
+    ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) AS avg_price,
+    UPPER(CONCAT(primary_genre, '/', category)) AS app_category,
+    UPPER(CONCAT(a.content_rating, '/', p.content_rating)) AS content,
+    (((ROUND(ROUND(AVG(a.rating+p.rating)) / 2, 1)*2)+1) * 60000) AS gross_profit
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+    ON a.name = p.name
+GROUP BY a.name, avg_price, app_category, content
+HAVING ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) <= 1
+ORDER BY avg_rating DESC
+LIMIT 10;
+
+WITH first_cost AS
+    (SELECT a.name,
+        CASE WHEN ROUND(AVG((a.price + replace(p.price, '$',                                '')::numeric)/2),2)<=1 THEN 10000
+       WHEN ROUND(AVG((a.price + replace(p.price, '$',                                      '')::numeric)/2),2)>1 THEN ROUND(AVG((a.price + replace(p.price, '$',                                      '')::numeric)/2),2)*10000
+       END AS initial_cost
+     FROM app_store_apps AS a
+     INNER JOIN play_store_apps AS p
+     ON a.name = p.name
+     GROUP BY a.name)
+SELECT a.name, a.primary_genre,
+      (ROUND(AVG((a.rating+p.rating))/2,2)*2)+1 AS longevity,
+      (((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*60000 AS total_revenue,
+      ((((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*48000) - fc.initial_cost AS               total_profit,
+     CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                   avg_price,
+     CASE WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.75 THEN '5.0'
+     WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.25 THEN '4.5'
+     END AS avg_rating_rounded
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name
+FULL JOIN first_cost AS fc
+ON a.name = fc.name
+GROUP BY a.name, a.primary_genre, p.content_rating, a.content_rating, fc.initial_cost
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
+ORDER BY total_profit DESC
+LIMIT 15;
+white_check_mark
+eyes
+raised_hands
+
+
+
+
+
+
+
+
+
+
+
+
