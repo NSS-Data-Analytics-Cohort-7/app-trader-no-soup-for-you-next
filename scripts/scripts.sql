@@ -211,24 +211,58 @@ WHERE content_rating BETWEEN '+4' AND '9+'
 ORDER BY content_rating DESC
 LIMIT 10
 
--- profitability
+-- profitability CTE
 - total_cost = purchase_price + (longevity * 12000)
 - profit = total_revanue - total_cost
 
-WITH total_cost AS (SELECT name, 
-                    CASE WHEN ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <= '1' THEN '10000'
-                    ELSE ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' END AS purchase_price
-                   FROM )
+WITH total_cost AS (SELECT a.name, 
+                           CASE WHEN ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <= '1' THEN '10000'
+                           ELSE ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' END AS purchase_price
+                   FROM app_store_apps AS a
+                   INNER JOIN play_store_apps AS p
+                   ON a.name = p.name
+                   GROUP BY 1)
 SELECT a.name,
        ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS avg_price,
        ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
        (ROUND(AVG((a.rating+p.rating))/2,2)*2)+1 AS longevity,
        ((ROUND(AVG((a.rating+p.rating))/2,2)*2)+1)*60000 AS total_revenue,
-       (((ROUND(AVG((a.rating+p.rating))/2,2)*2)+1)*60000) - ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' AS total_profit
 FROM app_store_apps AS a
 INNER JOIN play_store_apps AS p
     ON a.name = p.name
-GROUP BY a.name 
+SELECT purchase_price
+FROM total_cost
+GROUP BY a.name
+ORDER BY total_profit DESC
+LIMIT 15;
+
+-- MATT
+WITH first_cost AS
+    (SELECT a.name,
+        CASE WHEN ROUND(AVG((a.price + replace(p.price, '$',                                '')::numeric)/2),2)<=1 THEN 10000
+       WHEN ROUND(AVG((a.price + replace(p.price, '$',                                      '')::numeric)/2),2)>1 THEN ROUND(AVG((a.price + replace(p.price, '$',                                      '')::numeric)/2),2)*10000
+       END AS initial_cost
+     FROM app_store_apps AS a
+     INNER JOIN play_store_apps AS p
+     ON a.name = p.name
+     GROUP BY a.name)
+SELECT a.name, a.primary_genre,
+      (ROUND(AVG((a.rating+p.rating))/2,2)*2)+1 AS longevity,
+      (((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*60000 AS total_revenue,
+      ((((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*48000) - fc.initial_cost AS               total_profit,
+     CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                   avg_price,
+     CASE WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.75 THEN '5.0'
+     WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.25 THEN '4.5'
+     END AS avg_rating_rounded
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name
+FULL JOIN first_cost AS fc
+ON a.name = fc.name
+GROUP BY a.name, a.primary_genre, p.content_rating, a.content_rating, fc.initial_cost
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
 ORDER BY total_profit DESC
 LIMIT 15;
 
