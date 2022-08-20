@@ -173,19 +173,60 @@ SELECT
 
 -- e. App Trader would prefer to work with apps that are available in both the App Store and the Play Store since they can market both for the same $1000 per month.
 -- Group colab
+
 SELECT a.name, p.genres,
      CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
      ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
-     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                avg_price
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS avg_price
 FROM app_store_apps AS a
 INNER JOIN play_store_apps AS p
 ON a.name = p.name
 GROUP BY a.name, p.genres, p.content_rating, a.content_rating
-HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
-    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1.50
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 1.5
 ORDER BY avg_rating DESC
 LIMIT 15;
 
--- DELETE
+-- 
 
+-- Total profit is Total est. lifespan * 12(5000)
+-- Longevity = ((Rating * 2) + 1)
+
+
+SELECT name, 
+       ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
+       
+
+SELECT currency
+FROM app_store_apps;
+
+SELECT
+name,
+price,
+content_rating,
+review_count,
+primary_genre
+From app_store_apps
+WHERE content_rating BETWEEN '+4' AND '9+'
+ORDER BY content_rating DESC
+LIMIT 10
+
+-- profitability
+- total_cost = purchase_price + (longevity * 12000)
+- profit = total_revanue - total_cost 
+WITH total_cost AS (CASE WHEN ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <= '1' THEN '10000'
+       ELSE ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' END)
+       
+SELECT a.name,
+       ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS avg_price,
+       ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
+       (ROUND(AVG((a.rating+p.rating))/2,2)*2)+1 AS longevity,
+       ((ROUND(AVG((a.rating+p.rating))/2,2)*2)+1)*60000 AS total_revenue,
+       (((ROUND(AVG((a.rating+p.rating))/2,2)*2)+1)*60000) - ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' AS total_profit
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+    ON a.name = p.name
+GROUP BY a.name 
+ORDER BY total_profit DESC
+LIMIT 15;
 
