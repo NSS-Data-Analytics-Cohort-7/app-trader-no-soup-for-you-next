@@ -12,6 +12,20 @@ FROM app_store_apps
 SELECT *
 FROM play_store_apps
 
+-- FINAL
+
+SELECT
+    a.name,
+    ROUND(ROUND(AVG(a.rating + p.rating)) / 2, 1) AS avg_rating,
+    ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) AS avg_price,
+    UPPER(CONCAT(primary_genre, '/', category)) AS app_category
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+    ON a.name = p.name
+GROUP BY a.name, avg_price, app_category
+HAVING ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) <= 1
+ORDER BY avg_rating DESC;
+
 --  Highest rating with over 2 million reviews
 
 SELECT a.name,
@@ -94,6 +108,7 @@ ORDER BY review_count DESC;
 --  1.01 and up = price(10000)
 
 -- Total cost of app to buy for app buyer person - Apple
+
 SELECT name,price,review_count,rating,
 CASE
     WHEN price<= 1 THEN '10000'
@@ -103,7 +118,8 @@ FROM app_store_apps
 ORDER BY total_price DESC;
 
 -- Total cost of app to buy for app buyer person - Google
--- Need to fix commas
+-- Need to fix commas.
+
 SELECT 
 name,
 price,
@@ -111,7 +127,7 @@ install_count,
 rating,
 CASE
     WHEN CAST(REPLACE(price, '$', '') AS NUMERIC)<=1 THEN 10000
-    WHEN CAST(REPLACE(price, '$', '') AS NUMERIC)>1 THEN TO_CHAR(CAST(REPLACE(price, '$', '') as NUMERIC) * 10000), 'FM9,999,999,999'))
+    WHEN CAST(REPLACE(price, '$', '') AS NUMERIC)>1 THEN TO_CHAR(CAST(REPLACE((price, '$', '') AS NUMERIC) * 10000), 'FM9,999,999,999')
     END AS total_price
 FROM play_store_apps
 ORDER BY total_price DESC;
@@ -119,6 +135,7 @@ ORDER BY total_price DESC;
 --TO_CHAR(,'FM9,999,999,999')
 --TO_CHAR(SUM(CAST(a.review_count AS INT)+p.review_count),'FM9,999,999,999')  AS total_review_count
 -- ROUND
+
 SELECT
     ROUND(10.817, 1);
     
