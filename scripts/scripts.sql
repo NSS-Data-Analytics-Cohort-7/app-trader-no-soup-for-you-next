@@ -295,3 +295,35 @@ HAVING ROUND(((a.price + REPLACE(p.price, '$', '')::NUMERIC) / 2),2) <= 1
 ORDER BY avg_rating DESC
 LIMIT 10;
 
+-- Final Final
+WITH first_cost AS
+    (SELECT a.name,
+        CASE WHEN ROUND(AVG((a.price + replace(p.price, '$',                                '')::numeric)/2),2)<=1 THEN 10000
+       WHEN ROUND(AVG((a.price + replace(p.price, '$',                                      '')::numeric)/2),2)>1 THEN ROUND(AVG((a.price + replace(p.price, '$',                                      '')::numeric)/2),2)*10000
+       END AS initial_cost 
+     FROM app_store_apps AS a
+     INNER JOIN play_store_apps AS p
+     ON a.name = p.name
+     GROUP BY a.name)
+SELECT a.name, a.primary_genre,
+      (ROUND(AVG((a.rating+p.rating))/2,2)*2)+1 AS longevity,
+      (((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*12000 AS total_revenue,
+      ((((ROUND(AVG((a.rating+p.rating))/2,2))*2)+1)*108000) - fc.initial_cost AS               total_profit,
+     CONCAT(p.content_rating, '/', a.content_rating) AS content_rating,
+     ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS                   avg_price,
+     CASE WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.75 THEN '5.0'
+     WHEN ROUND(AVG((a.rating+p.rating))/2,2) >=4.25 THEN '4.5'
+     END AS avg_rating_rounded
+FROM app_store_apps AS a
+INNER JOIN play_store_apps AS p
+ON a.name = p.name
+FULL JOIN first_cost AS fc
+ON a.name = fc.name
+GROUP BY 1, 2, p.content_rating, a.content_rating, fc.initial_cost
+HAVING ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <=1
+    AND ROUND(AVG((a.rating+p.rating))/2,2) >= 4.5
+ORDER BY total_profit DESC
+LIMIT 15;
+
+-- Try and find the total profit per genre globally. 
+
