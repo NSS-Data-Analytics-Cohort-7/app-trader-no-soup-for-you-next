@@ -10,17 +10,20 @@
 
 SELECT
 name,
-content_rating,
+rating,
 review_count,
 primary_genre,
-SUM(Price)
+SUM(Price) AS tot_price
 
 From app_store_apps
-WHERE content_rating BETWEEN '+4' AND '9+'
-AND primary_genre = 'games'
+WHERE rating >= 4.0
+AND primary_genre = 'Games'
 GROUP BY 1,2,3,4
-ORDER BY content_rating DESC
+ORDER BY rating DESC
 LIMIT 10
+
+-- SELECT *
+-- FROM app_store_apps
 
 
 --play_store_apps
