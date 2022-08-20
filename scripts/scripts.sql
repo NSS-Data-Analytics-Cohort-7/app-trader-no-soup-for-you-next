@@ -213,10 +213,12 @@ LIMIT 10
 
 -- profitability
 - total_cost = purchase_price + (longevity * 12000)
-- profit = total_revanue - total_cost 
-WITH total_cost AS (CASE WHEN ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <= '1' THEN '10000'
-       ELSE ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' END)
-       
+- profit = total_revanue - total_cost
+
+WITH total_cost AS (SELECT name, 
+                    CASE WHEN ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) <= '1' THEN '10000'
+                    ELSE ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2) * '10000' END AS purchase_price
+                   FROM )
 SELECT a.name,
        ROUND(AVG((a.price + replace(p.price, '$', '')::numeric)/2),2)AS avg_price,
        ROUND(AVG((a.rating+p.rating))/2,2) AS AVG_rating,
