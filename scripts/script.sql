@@ -29,6 +29,7 @@ LIMIT 10;
 
 
 --Query to determine max amount that can be spent on 5 star app to be more profitable than 4.5
+-- $4.99
 
 WITH first_cost AS(
                     SELECT a.name,
